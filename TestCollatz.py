@@ -69,7 +69,6 @@ class TestCollatz (TestCase) :
         w = StringIO()
         collatz_solve(r, w)
         self.assertEqual(w.getvalue(), "9\n9\n19\n")
-
 # ----
 # main
 # ----

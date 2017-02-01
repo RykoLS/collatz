@@ -9,7 +9,7 @@
 # Copyright (C) 2017
 # Glenn P. Downing
 # ---------------------------
-
+lazy_cache = {}
 # ------------
 # collatz_read
 # ------------
@@ -34,7 +34,10 @@ def collatz_eval (n) :
     return the value that produces the max cycle length of the range [1, n]
     """
     # <your code>
-
+    assert n > 0
+    if n in lazy_cache:
+        print(lazy_cache)
+        return lazy_cache.get(n)
     curr_max_cyc_len = 0
     curr_best = 1
     for i in range(1, n+1):
@@ -44,10 +47,14 @@ def collatz_eval (n) :
             curr_best = i
 
     #<your code>
-    """assert n > 0
+    """
+    assert n > 0
     m = n
     assert m > 0
-    return m"""
+    return m
+    """
+    assert curr_best > 0
+    lazy_cache[n] = curr_best
     return curr_best
 # -------------
 # collatz_print
