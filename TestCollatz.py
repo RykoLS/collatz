@@ -65,7 +65,7 @@ class TestCollatz (TestCase) :
     # -----
 
     def test_solve (self) :
-        r = StringIO("3\n10\n15\n20\n")
+        r = StringIO("3\n1078976\n4194305\n2107152\n")
         w = StringIO()
         collatz_solve(r, w)
         self.assertEqual(w.getvalue(), "9\n9\n19\n")

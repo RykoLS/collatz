@@ -9,7 +9,36 @@
 # Copyright (C) 2017
 # Glenn P. Downing
 # ---------------------------
-lazy_cache = {}
+
+
+# ------
+# caches
+# ------
+cycle_length_cache = {}
+
+meta_cache = {
+    16:9,
+    32:27,
+    64:55,
+    128:97,
+    256:235,
+    512:327,
+    1024:871,
+    2048:1161,
+    4096:3711,
+    8192:6171,
+    16384:13255,
+    32768:26623,
+    65536:52527,
+    131072:106239,
+    262144:230631,
+    524288:511935,
+    1048576:837799,
+    2097152:1723519,
+    4194304:3732423,
+    5000000:3732423
+}
+
 # ------------
 # collatz_read
 # ------------
@@ -33,28 +62,34 @@ def collatz_eval (n) :
     n the end of the range [1, n], inclusive
     return the value that produces the max cycle length of the range [1, n]
     """
-    # <your code>
     assert n > 0
-    if n in lazy_cache:
-        print(lazy_cache)
-        return lazy_cache.get(n)
+    
+    global cycle_length_cache
     curr_max_cyc_len = 0
     curr_best = 1
-    for i in range(1, n+1):
-        x = cycle_length(i)
+
+    for key in sorted(meta_cache, reverse = True):
+        if n == key:
+            return meta_cache.get(n)
+        elif n > key:
+            m = meta_cache.get(key)
+            break
+        else:
+            m = int((n/2) + 1)
+    assert m > 0
+    for i in range(m, n+1):
+        if i in cycle_length_cache:
+            x = cycle_length_cache.get(i)
+        else:
+            x = cycle_length(i)
+            cycle_length_cache[i] = x
+        #print(i)
+        #print(cycle_length_cache[i])
         if x >= curr_max_cyc_len:
             curr_max_cyc_len = x
             curr_best = i
-
-    #<your code>
-    """
-    assert n > 0
-    m = n
-    assert m > 0
-    return m
-    """
     assert curr_best > 0
-    lazy_cache[n] = curr_best
+    #print(cycle_length_cache)
     return curr_best
 # -------------
 # collatz_print
