@@ -1,5 +1,20 @@
 .DEFAULT_GOAL := test
 
+FILES :=                              \
+    Collatz.html                      \
+    Collatz.log                       \
+    Collatz.py                        \
+    RunCollatz.in                     \
+    RunCollatz.out                    \
+    RunCollatz.py                     \
+    TestCollatz.out                   \
+    TestCollatz.py
+
+# uncomment these:
+#    .travis.yml                       \
+#    collatz-tests/EID-RunCollatz.in   \
+#    collatz-tests/EID-RunCollatz.out  \
+
 ifeq ($(shell uname), Darwin)          # Apple
     PYTHON   := python3.5
     PIP      := pip3.5
@@ -30,56 +45,66 @@ else                                   # UTCS
     AUTOPEP8 := autopep8
 endif
 
+.pylintrc:
+	$(PYLINT) --disable=locally-disabled --reports=no --generate-rcfile > $@
+
+collatz-tests:
+	git clone https://github.com/cs373t-spring-2017/collatz-tests.git
+
+Collatz.html: Collatz.py
+	pydoc3 -w Collatz
+
+Collatz.log:
+	git log > Collatz.log
+
+RunCollatz.tmp: Collatz.py RunCollatz.in RunCollatz.out RunCollatz.py .pylintrc
+	-$(PYLINT) Collatz.py
+	-$(PYLINT) RunCollatz.py
+	$(PYTHON) RunCollatz.py < RunCollatz.in > RunCollatz.tmp
+	diff RunCollatz.tmp RunCollatz.out
+
+TestCollatz.tmp: Collatz.py TestCollatz.py .pylintrc
+	-$(PYLINT) TestCollatz.py
+	$(COVERAGE) run    --branch TestCollatz.py >  TestCollatz.tmp 2>&1
+	$(COVERAGE) report -m                      >> TestCollatz.tmp
+	cat TestCollatz.tmp
+
+check:
+	@not_found=0;                                 \
+    for i in $(FILES);                            \
+    do                                            \
+        if [ -e $$i ];                            \
+        then                                      \
+            echo "$$i found";                     \
+        else                                      \
+            echo "$$i NOT FOUND";                 \
+            not_found=`expr "$$not_found" + "1"`; \
+        fi                                        \
+    done;                                         \
+    if [ $$not_found -ne 0 ];                     \
+    then                                          \
+        echo "$$not_found failures";              \
+        exit 1;                                   \
+    fi;                                           \
+    echo "success";
+
 clean:
-	cd examples; make clean
-	@echo
-	cd exercises; make clean
-	@echo
-	cd projects/collatz; make clean
+	rm -f  .coverage
+	rm -f  .pylintrc
+	rm -f  *.pyc
+	rm -f  Collatz.html
+	rm -f  Collatz.log
+	rm -f  RunCollatz.tmp
+	rm -f  TestCollatz.tmp
+	rm -rf __pycache__
 
 config:
 	git config -l
 
-docker-build:
-	docker build -t gpdowning/python .
-
-docker-pull:
-	docker pull gpdowning/python
-
-docker-push:
-	docker push gpdowning/python
-
-docker-run:
-	docker run -it -v $(PWD):/usr/cs373 -w /usr/cs373 gpdowning/python
-
-init:
-	touch README
-	git init
-	git add README
-	git commit -m 'first commit'
-	git remote add origin git@github.com:gpdowning/cs373.git
-	git push -u origin master
-
-pull:
-	make clean
-	@echo
-	git pull
-	git status
-
-push:
-	make clean
-	@echo
-	git add .gitignore
-	git add .travis.yml
-	git add Dockerfile
-	git add examples
-	git add exercises
-	git add projects
-	git add makefile
-	git add notes
-	git commit -m "another commit"
-	git push
-	git status
+format:
+	$(AUTOPEP8) -i Collatz.py
+	$(AUTOPEP8) -i RunCollatz.py
+	$(AUTOPEP8) -i TestCollatz.py
 
 status:
 	make clean
@@ -88,56 +113,9 @@ status:
 	git remote -v
 	git status
 
-sync:
-	@rsync -r -t -u -v --delete              \
-    --include "Docker.txt"                   \
-    --include "Hello.py"                     \
-    --include "Assertions.py"                \
-    --include "Exceptions.py"                \
-    --include "Types.py"                     \
-    --include "Operators.py"                 \
-    --include "Variables.py"                 \
-    --include "Copy.py"                      \
-    --include "Cache.py"                     \
-    --exclude "*"                            \
-    ../../examples/python/ examples
-	@rsync -r -t -u -v --delete              \
-    --include "UnitTests1.py"                \
-    --include "UnitTests1T.py"               \
-    --include "UnitTests2.py"                \
-    --include "UnitTests2T.py"               \
-    --include "UnitTests3.py"                \
-    --include "UnitTests3T.py"               \
-    --include "Coverage1.py"                 \
-    --include "Coverage1T.py"                \
-    --include "Coverage2.py"                 \
-    --include "Coverage2T.py"                \
-    --include "Coverage3.py"                 \
-    --include "Coverage3T.py"                \
-    --include "IsPrime1.py"                  \
-    --include "IsPrime1T.py"                 \
-    --include "IsPrime2.py"                  \
-    --include "IsPrime2T.py"                 \
-    --exclude "*"                            \
-    ../../exercises/python/ exercises
-	@rsync -r -t -u -v --delete              \
-    --include "Collatz.py"                   \
-    --include "RunCollatz.in"                \
-    --include "RunCollatz.py"                \
-    --include "RunCollatz.out"               \
-    --include "TestCollatz.py"               \
-    --include "TestCollatz.out"              \
-    --exclude "*"                            \
-    ../../projects/python/collatz/ projects/collatz
-
-test:
-	make clean
-	@echo
-	cd examples; make test
-	@echo
-	cd exercises; make test
-	@echo
-	cd projects/collatz; make test
+test: Collatz.html Collatz.log RunCollatz.tmp TestCollatz.tmp collatz-tests
+	ls -al
+	make check
 
 versions:
 	which make
